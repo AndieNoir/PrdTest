@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <title>{{ title }} | PrdTest</title>
+  <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+  <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/github-fork-ribbon-css/0.2.3/gh-fork-ribbon.min.css" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.2/js/bootstrap.min.js"></script>
+  <style>
+      .github-fork-ribbon:before {
+        background-color: #fff;
+      }
+
+      .github-fork-ribbon:after {
+        color: #1f1f1f;
+        border-color: transparent;
+      }
+  </style>
+</head>
+<body>
+<a class="github-fork-ribbon" href="https://github.com/AndieNoir/PrdTest" data-ribbon="Fork me on GitHub" title="Fork me on GitHub">Fork me on GitHub</a>
+<nav class="navbar navbar-dark bg-dark">
+  <a class="navbar-brand" href="{{ url_for('home.home') }}">PrdTest</a>
+</nav>
+{% if breadcrumbs|length > 1 %}
+<nav>
+  <ol class="breadcrumb">
+    {% for breadcrumb in breadcrumbs %}
+    <li class="breadcrumb-item {{ 'active' if loop.last }}">
+      {% if not loop.last %}
+      <a href="{{ breadcrumb.url }}">{{ breadcrumb.text }}</a>
+      {% else %}
+      {{ breadcrumb.text }}
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ol>
+</nav>
+{% endif %}
+<main role="main" class="container mt-4 mb-4">
+  {% block content %}{% endblock %}
+</main>
+</body>
+</html>

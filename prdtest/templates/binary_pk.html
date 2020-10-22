@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+{% set title = 'Binary PK' %}
+
+{% block content %}
+<h3>{{ title }}</h3>
+<div class="mt-4">
+  By clicking the run button, a random number generator will be used to try to color the box below with color green.
+</div>
+<div class="mt-4">
+  <b>Try to make it green using your mind!</b>
+</div>
+<div id="box" class="mt-4" style="width: 150px; height: 150px; margin-left: auto; margin-right: auto; border: thin solid #fff; border-radius: 10px"></div>
+<div class="mt-4 text-center"><button class="btn btn-secondary" type="button" id="runButton" onclick="run()">Run</button></div>
+<table class="mt-4 status-table">
+  <tr>
+    <td style="white-space: nowrap">WebSocket Status</td>
+    <td>:</td>
+    <td id="websocketStatus">Disconnected</td>
+  </tr>
+  <tr>
+    <td style="white-space: nowrap">Session ID</td>
+    <td>:</td>
+    <td id="sessionId">-</td>
+  </tr>
+</table>
+<div class="mt-4 text-center"><a href="stats" class="btn btn-secondary" type="button">View statistics</a></div>
+<script>
+    var sessionId = localStorage.getItem('session_id');
+
+    var websocket = new WebSocket(document.location.href.replace('http://', 'ws://').replace(/\/$/, '') + '/ws');
+
+    websocket.onopen = function () {
+        $('#websocketStatus').html('Connected');
+
+        if (sessionId != null) {
+            websocket.send(JSON.stringify({'action': 'set_session_id', 'session_id': sessionId}));
+        } else {
+            websocket.send(JSON.stringify({'action': 'new_session'}));
+        }
+    };
+
+    websocket.onclose = function () {
+        $('#websocketStatus').html('Disconnected')
+    };
+
+    var requestSentTime;
+
+    websocket.onmessage = function(event) {
+        var message = JSON.parse(event.data);
+        if (message['type'] === 'set_session_id_result') {
+            if (message['status'] === 1) {
+                $('#sessionId').html(sessionId);
+            }
+            if (message['status'] === 0) {
+                websocket.send(JSON.stringify({'action': 'new_session'}));
+            }
+        }
+        if (message['type'] === 'new_session_result') {
+            sessionId = message['session_id'];
+            localStorage.setItem('session_id', sessionId);
+            $('#sessionId').html(sessionId);
+        } else if (message['type'] === 'trial_result') {
+            websocket.send(JSON.stringify({
+                'action': 'report_rtd',
+                'trial_id': message['trial_id'],
+                'rtd_ms': Math.round(performance.now() - requestSentTime)
+            }));
+
+            if (message['hit'] === 1) {
+                $('#box').css('backgroundColor', '#0f0');
+            } else {
+                $('#box').css('backgroundColor', 'transparent');
+            }
+
+            $('#runButton').prop('disabled', false);
+        }
+    };
+
+    function run() {
+        $('#runButton').prop('disabled', true);
+        websocket.send(JSON.stringify({'action': 'trial'}));
+        requestSentTime = performance.now();
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% set title = 'Binary PK Statistics' %}
+
+{% block content %}
+<h3>{{ title }}</h3>
+<div id="sessionStatistics" hidden>
+  <h5 class="mt-4">Session Statistics</h5>
+  <div class="table-responsive">
+    <table class="table table-bordered mt-3">
+      <thead>
+      <tr>
+        <th>#</th>
+        <th>Generator ID</th>
+        <th>Trial Count</th>
+        <th>Hit Rate</th>
+        <th>P</th>
+      </tr>
+      </thead>
+      <tbody id="sessionStatsTableBody"></tbody>
+    </table>
+  </div>
+  <table>
+    <tr>
+      <td style="white-space: nowrap; width: 9ch;">Session ID:</td>
+      <td id="sessionId"></td>
+    </tr>
+  </table>
+  <div class="mt-3 mb-5"><button class="btn btn-secondary" type="button" onclick="reset()">Reset</button></div>
+</div>
+<h5 class="mt-4">Overall Statistics</h5>
+<div class="table-responsive">
+  <table class="table table-bordered mt-3">
+    <thead>
+    <tr>
+      <th>#</th>
+      <th>Generator ID</th>
+      <th>Trial Count</th>
+      <th>Hit Rate</th>
+      <th>P</th>
+    </tr>
+    </thead>
+    <tbody id="overallStatsTableBody"></tbody>
+  </table>
+</div>
+<div><a href="binary_pk.csv" class="btn btn-secondary" type="button">Download generated dataset</a></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jstat/1.9.3/jstat.min.js"></script>
+<script>
+    var sessionId = localStorage.getItem('session_id');
+
+    if (sessionId != null) {
+        $('#sessionId').html(sessionId);
+        $.getJSON('api/get_session_trial_counts_and_hit_counts', {'session_id': sessionId}, function(generators) {
+            $.each(generators, function(i, generator) {
+                var hitRate = generator['hit_count'] / generator['trial_count'];
+                var p = 1 - jStat.binomial.cdf(generator['hit_count'] - 1, generator['trial_count'], 0.5);
+                $('#sessionStatsTableBody').append('<tr><td>' + (i + 1) + '</td><td>' + generator['generator_id']  + '</td><td>' + generator['trial_count'] + '</td><td>' + hitRate.toFixed(3) + '</td><td>' + p.toFixed(3) + '</td></tr>');
+            });
+            if (generators.length > 0) {
+                $('#sessionStatistics').prop('hidden', false);
+            }
+        })
+    }
+
+    $.getJSON('api/get_overall_trial_counts_and_hit_counts', function(generators) {
+        $.each(generators, function(i, generator) {
+            var hitRate = generator['hit_count'] / generator['trial_count'];
+            var p = 1 - jStat.binomial.cdf(generator['hit_count'] - 1, generator['trial_count'], 0.5);
+            $('#overallStatsTableBody').append('<tr><td>' + (i + 1) + '</td><td>' + generator['generator_id']  + '</td><td>' + generator['trial_count'] + '</td><td>' + hitRate.toFixed(3) + '</td><td>' + p.toFixed(3) + '</td></tr>');
+        });
+    });
+
+    function reset() {
+        localStorage.removeItem('session_id');
+        location.reload()
+    }
+</script>
+{% endblock %}

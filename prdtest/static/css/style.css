@@ -1,0 +1,14 @@
+.breadcrumb {
+    border-radius: 0;
+}
+
+.status-table {
+    margin-left: auto;
+    margin-right: auto;
+    border-spacing: 1ch 0;
+    border-collapse: separate;
+}
+
+table td {
+    vertical-align: top;
+}

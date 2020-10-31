@@ -96,42 +96,44 @@ def ws(websocket):
     session_id = None
     while not websocket.closed:
         try:
-            message = json.loads(websocket.receive())
-            action = message['action'].lower()
-            if action == 'new_session':
-                session_id = str(uuid.uuid4())
-                _session_ids.add(session_id)
-                websocket.send(json.dumps({'type': 'new_session_result', 'session_id': session_id}))
-            if action == 'set_session_id':
-                if message['session_id'] in _session_ids:
-                    session_id = message['session_id']
-                    websocket.send(json.dumps({'type': 'set_session_id_result', 'status': 1}))
-                else:
-                    websocket.send(json.dumps({'type': 'set_session_id_result', 'status': 0}))
-            if action == 'trial':
-                if session_id is not None:
-                    timestamp = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%fZ')
-                    trial_id = str(uuid.uuid4())
-                    generator = random.choice(get_generators())
-                    b, raw_bits = generator.get_bool()
-                    hit = 1 if b else 0
-                    websocket.send(json.dumps({'type': 'trial_result', 'trial_id': trial_id, 'hit': hit}))
-                    _unrecorded_trials[trial_id] = {
-                        'timestamp': timestamp,
-                        'ip_address': request.remote_addr,
-                        'ip_address_country_alpha2': ip_geolocation.get_country_alpha2(request.remote_addr),
-                        'user_agent': request.user_agent.string,
-                        'session_id': session_id,
-                        'hit': hit,
-                        'raw_bits': ''.join([str(bit) for bit in raw_bits]),
-                        'generator_id': generator.id
-                    }
-            elif action == 'report_rtd':
-                trial = _unrecorded_trials[message['trial_id']]
-                if trial['session_id'] == session_id:
-                    _log_file.write(f'{trial["timestamp"]},{trial["ip_address"]},{trial["ip_address_country_alpha2"] if trial["ip_address_country_alpha2"] is not None else ""},"{trial["user_agent"]}",{trial["session_id"]},{trial["hit"]},{trial["raw_bits"]},{int(message["rtd_ms"])},{trial["generator_id"]}\n')
-                    _log_file.flush()
-                    del _unrecorded_trials[message['trial_id']]
+            message = websocket.receive()
+            if message is not None:
+                message = json.loads(message)
+                action = message['action'].lower()
+                if action == 'new_session':
+                    session_id = str(uuid.uuid4())
+                    _session_ids.add(session_id)
+                    websocket.send(json.dumps({'type': 'new_session_result', 'session_id': session_id}))
+                if action == 'set_session_id':
+                    if message['session_id'] in _session_ids:
+                        session_id = message['session_id']
+                        websocket.send(json.dumps({'type': 'set_session_id_result', 'status': 1}))
+                    else:
+                        websocket.send(json.dumps({'type': 'set_session_id_result', 'status': 0}))
+                if action == 'trial':
+                    if session_id is not None:
+                        timestamp = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+                        trial_id = str(uuid.uuid4())
+                        generator = random.choice(get_generators())
+                        b, raw_bits = generator.get_bool()
+                        hit = 1 if b else 0
+                        websocket.send(json.dumps({'type': 'trial_result', 'trial_id': trial_id, 'hit': hit}))
+                        _unrecorded_trials[trial_id] = {
+                            'timestamp': timestamp,
+                            'ip_address': request.remote_addr,
+                            'ip_address_country_alpha2': ip_geolocation.get_country_alpha2(request.remote_addr),
+                            'user_agent': request.user_agent.string,
+                            'session_id': session_id,
+                            'hit': hit,
+                            'raw_bits': ''.join([str(bit) for bit in raw_bits]),
+                            'generator_id': generator.id
+                        }
+                elif action == 'report_rtd':
+                    trial = _unrecorded_trials[message['trial_id']]
+                    if trial['session_id'] == session_id:
+                        _log_file.write(f'{trial["timestamp"]},{trial["ip_address"]},{trial["ip_address_country_alpha2"] if trial["ip_address_country_alpha2"] is not None else ""},"{trial["user_agent"]}",{trial["session_id"]},{trial["hit"]},{trial["raw_bits"]},{int(message["rtd_ms"])},{trial["generator_id"]}\n')
+                        _log_file.flush()
+                        del _unrecorded_trials[message['trial_id']]
         except Exception as e:
             traceback.print_exc()
             websocket.close(code=1011, message=str(e))

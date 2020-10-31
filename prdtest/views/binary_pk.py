@@ -37,7 +37,7 @@ _unrecorded_trials = {}
 create_logs_dir_if_not_exist()
 _log_file = open('logs/binary_pk.csv', 'a')
 if os.stat('logs/binary_pk.csv').st_size == 0:
-    _log_file.write('timestamp,ip_address,ip_address_country_alpha2,user_agent,session_id,trial_id,hit,raw_bits,rtd_ms,generator_id\n')
+    _log_file.write('timestamp,ip_address,ip_address_country_alpha2,user_agent,session_id,hit,raw_bits,rtd_ms,generator_id\n')
     _log_file.flush()
 
 
@@ -129,7 +129,7 @@ def ws(websocket):
             elif action == 'report_rtd':
                 trial = _unrecorded_trials[message['trial_id']]
                 if trial['session_id'] == session_id:
-                    _log_file.write(f'{trial["timestamp"]},{trial["ip_address"]},{trial["ip_address_country_alpha2"] if trial["ip_address_country_alpha2"] is not None else ""},"{trial["user_agent"]}",{trial["session_id"]},{message["trial_id"]},{trial["hit"]},{trial["raw_bits"]},{int(message["rtd_ms"])},{trial["generator_id"]}\n')
+                    _log_file.write(f'{trial["timestamp"]},{trial["ip_address"]},{trial["ip_address_country_alpha2"] if trial["ip_address_country_alpha2"] is not None else ""},"{trial["user_agent"]}",{trial["session_id"]},{trial["hit"]},{trial["raw_bits"]},{int(message["rtd_ms"])},{trial["generator_id"]}\n')
                     _log_file.flush()
                     del _unrecorded_trials[message['trial_id']]
         except Exception as e:

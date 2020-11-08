@@ -25,7 +25,6 @@
       <td id="sessionId"></td>
     </tr>
   </table>
-  <div class="mt-3 mb-5"><button class="btn btn-secondary" type="button" onclick="reset()">Reset</button></div>
 </div>
 <h5 class="mt-4">Overall Statistics</h5>
 <div class="table-responsive">
@@ -68,10 +67,5 @@
             $('#overallStatsTableBody').append('<tr><td>' + (i + 1) + '</td><td>' + generator['generator_id']  + '</td><td>' + generator['trial_count'] + '</td><td>' + hitRate.toFixed(3) + '</td><td>' + p.toFixed(3) + '</td></tr>');
         });
     });
-
-    function reset() {
-        localStorage.removeItem('session_id');
-        location.reload()
-    }
 </script>
 {% endblock %}

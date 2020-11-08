@@ -54,8 +54,7 @@
             if (message['status'] === 0) {
                 websocket.send(JSON.stringify({'action': 'new_session'}));
             }
-        }
-        if (message['type'] === 'new_session_result') {
+        } else if (message['type'] === 'new_session_result') {
             sessionId = message['session_id'];
             localStorage.setItem('session_id', sessionId);
             $('#sessionId').html(sessionId);

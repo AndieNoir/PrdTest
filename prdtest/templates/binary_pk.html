@@ -25,7 +25,7 @@
 </table>
 <div class="mt-4 text-center"><a href="stats" class="btn btn-secondary" type="button">View statistics</a></div>
 <script>
-    var sessionId = localStorage.getItem('session_id');
+    var sessionId = localStorage.getItem('binary_pk_session_id');
 
     var websocket = new WebSocket(document.location.href.replace('http://', 'ws://').replace(/\/$/, '') + '/ws');
 
@@ -55,7 +55,7 @@
             }
         } else if (message['type'] === 'new_session_result') {
             sessionId = message['session_id'];
-            localStorage.setItem('session_id', sessionId);
+            localStorage.setItem('binary_pk_session_id', sessionId);
             $('#sessionId').html(sessionId);
         } else if (message['type'] === 'trial_result') {
             websocket.send(JSON.stringify({

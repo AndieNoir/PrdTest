@@ -49,11 +49,18 @@
     if (sessionId != null) {
         $('#sessionId').html(sessionId);
         $.getJSON('api/get_session_trial_counts_and_hit_counts', {'session_id': sessionId}, function(generators) {
+            var totalTrial = 0;
+            var totalHit = 0;
             $.each(generators, function(i, generator) {
                 var hitRate = generator['hit_count'] / generator['trial_count'];
                 var p = 1 - jStat.binomial.cdf(generator['hit_count'] - 1, generator['trial_count'], 0.5);
                 $('#sessionStatsTableBody').append('<tr><td>' + (i + 1) + '</td><td>' + generator['generator_id']  + '</td><td>' + generator['trial_count'] + '</td><td>' + hitRate.toFixed(3) + '</td><td>' + p.toFixed(3) + '</td></tr>');
+                totalTrial += generator['trial_count'];
+                totalHit += generator['hit_count'];
             });
+            var hitRate = totalHit / totalTrial;
+            var p = 1 - jStat.binomial.cdf(totalHit - 1, totalTrial, 0.5);
+            $('#sessionStatsTableBody').append('<tr><td></td><td><b>Total</b></td><td><b>' + totalTrial + '</b></td><td><b>' + hitRate.toFixed(3) + '</b></td><td><b>' + p.toFixed(3) + '</b></td></tr>');
             if (generators.length > 0) {
                 $('#sessionStatistics').prop('hidden', false);
             }
@@ -61,11 +68,18 @@
     }
 
     $.getJSON('api/get_overall_trial_counts_and_hit_counts', function(generators) {
+        var totalTrial = 0;
+        var totalHit = 0;
         $.each(generators, function(i, generator) {
             var hitRate = generator['hit_count'] / generator['trial_count'];
             var p = 1 - jStat.binomial.cdf(generator['hit_count'] - 1, generator['trial_count'], 0.5);
             $('#overallStatsTableBody').append('<tr><td>' + (i + 1) + '</td><td>' + generator['generator_id']  + '</td><td>' + generator['trial_count'] + '</td><td>' + hitRate.toFixed(3) + '</td><td>' + p.toFixed(3) + '</td></tr>');
+            totalTrial += generator['trial_count'];
+            totalHit += generator['hit_count'];
         });
+        var hitRate = totalHit / totalTrial;
+        var p = 1 - jStat.binomial.cdf(totalHit - 1, totalTrial, 0.5);
+        $('#overallStatsTableBody').append('<tr><td></td><td><b>Total</b></td><td><b>' + totalTrial + '</b></td><td><b>' + hitRate.toFixed(3) + '</b></td><td><b>' + p.toFixed(3) + '</b></td></tr>');
     });
 </script>
 {% endblock %}

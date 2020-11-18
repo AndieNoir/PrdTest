@@ -40,10 +40,12 @@ Adding a new random number generator
             return self._hwrng.read(1)[0] % 5
     ```
 
-2.  Set the generator class on `config.py`
+2.  Add the generator to the experiment modules
+
+    Example:
 
     ```python
-    # prdtest/config.py
+    # prdtest/views/binary_pk.py
     
     from prdtest.generator.dev_hwrng import DevHwrng
 

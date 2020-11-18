@@ -21,3 +21,6 @@ class Generator:
 
     def get_bool(self) -> tuple:
         pass
+
+    def get_int_between_0_and_4(self) -> int:
+        pass

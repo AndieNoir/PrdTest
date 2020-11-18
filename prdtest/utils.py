@@ -16,15 +16,6 @@
 import os
 from datetime import datetime
 
-from prdtest.config import GENERATOR_CLASSES
-
-
-_generators = [*map(lambda cls: cls(), GENERATOR_CLASSES)]
-
-
-def get_generators() -> list:
-    return _generators
-
 
 def create_logs_dir_if_not_exist():
     os.makedirs('logs', exist_ok=True)

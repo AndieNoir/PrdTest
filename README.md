@@ -30,9 +30,14 @@ Adding a new random number generator
     
     class DevHwrng(Generator, id='my_rng'):
     
-       def get_bool(self):
-           with open('/dev/hwrng', 'rb') as f:
-               return f.read(1)[0] & 1
+        def get_bool(self):
+            with open('/dev/hwrng', 'rb') as f:
+                raw_bits = [f.read(1)[0] & 1]
+                return raw_bits[0], raw_bits
+
+        def get_int_between_0_and_4(self) -> int:
+            with open('/dev/hwrng', 'rb') as f:
+                return f.read(1)[0] % 5
     ```
 
 2.  Set the generator class on `config.py`

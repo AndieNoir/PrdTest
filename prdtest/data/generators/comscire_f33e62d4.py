@@ -29,6 +29,8 @@ class ComscireF33E62D4(Generator, id='comscire_f33e62d4'):
         self._qwqng_wrapper.GetQwqngInstance.restype = ctypes.c_void_p
         self._qwqng_wrapper.RandBytes.argtypes = [ctypes.c_void_p, ctypes.c_int]
         self._qwqng_wrapper.RandBytes.restype = ctypes.POINTER(ctypes.c_char)
+        self._qwqng_wrapper.RandUniform.argtypes = [ctypes.c_void_p]
+        self._qwqng_wrapper.RandUniform.restype = ctypes.c_double
         self._qwqng_wrapper.Clear.argtypes = [ctypes.c_void_p]
         self._qng_pointer = self._qwqng_wrapper.GetQwqngInstance()
 
@@ -40,6 +42,10 @@ class ComscireF33E62D4(Generator, id='comscire_f33e62d4'):
                 raw_bits.append(1 if data[i] >> j & 1 == 1 else 0)
         raw_bits = raw_bits[:ComscireF33E62D4._GET_BOOL_BITS_PER_TRIAL]
         return raw_bits.count(1) > ComscireF33E62D4._GET_BOOL_BITS_PER_TRIAL / 2, raw_bits
+
+    def get_int_between_0_and_4(self) -> int:
+        self._qwqng_wrapper.Clear(self._qng_pointer)
+        return int(self._qwqng_wrapper.RandUniform(self._qng_pointer) * 5)
 
     def _get_bytes(self, length: int) -> bytes:
         self._qwqng_wrapper.Clear(self._qng_pointer)

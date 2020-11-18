@@ -19,8 +19,7 @@ from flask_sockets import Sockets
 from gevent import pywsgi
 from geventwebsocket.handler import WebSocketHandler
 
-from prdtest.views import home, binary_pk
-
+from prdtest.views import home, binary_pk, rng_assisted_divination
 
 app = Flask(__name__)
 sockets = Sockets(app)
@@ -32,6 +31,9 @@ app.register_blueprint(home.blueprint)
 
 app.register_blueprint(binary_pk.blueprint, url_prefix='/binary_pk')
 sockets.register_blueprint(binary_pk.ws_blueprint, url_prefix='/binary_pk')
+
+app.register_blueprint(rng_assisted_divination.blueprint, url_prefix='/rng_assisted_divination')
+sockets.register_blueprint(rng_assisted_divination.ws_blueprint, url_prefix='/rng_assisted_divination')
 
 server = pywsgi.WSGIServer(('0.0.0.0', 57011), application=app, handler_class=WebSocketHandler)
 server.serve_forever()

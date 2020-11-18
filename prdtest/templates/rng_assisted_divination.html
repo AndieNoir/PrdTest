@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+{% set title = 'RNG-Assisted Divination' %}
+{% set blank_card = url_for('static', filename='img/blank.svg') %}
+{% set circle_card = url_for('static', filename='img/circle.svg') %}
+{% set cross_card = url_for('static', filename='img/cross.svg') %}
+{% set waves_card = url_for('static', filename='img/waves.svg') %}
+{% set square_card = url_for('static', filename='img/square.svg') %}
+{% set star_card = url_for('static', filename='img/star.svg') %}
+{% set card_back = url_for('static', filename='img/back.svg') %}
+
+{% block content %}
+<h3>{{ title }}</h3>
+<div class="mt-4">
+  <ol>
+    <li>Click <b>Prepare</b> to prepare a <a href="https://en.wikipedia.org/wiki/Zener_cards">zener card</a> face down</li>
+    <li>Clear your mind and say for example <i>"I want the RNG to generate a word matches the figure drawn on the card"</i></li>
+    <li>Click <b>Generate answer</b> to let the RNG choose a word between <i>"Circle"</i>, <i>"Cross"</i>, <i>"Waves"</i>, <i>"Square"</i>, or <i>"Star"</i></li>
+    <li>Click <b>Flip</b> to flip the card for you to check if the generated word matches the figure drawn on the card</li>
+  </ol>
+</div>
+<div id="cardContainer" class="mt-4 text-center"><img class="zener-card" src="{{ blank_card }}"/></div>
+<div class="mt-4 text-center"><span style="margin-right: 1ch">RNG answer:</span><div id="answerContainer" style="display: inline-block; margin: auto; width: 100px; border: thin solid #555; border-radius: 4px">&nbsp;</div></div>
+<div class="mt-4 text-center"><button class="btn btn-secondary" type="button" id="prepareButton" onclick="prepare()">Prepare</button></div>
+<div class="mt-4 text-center"><button class="btn btn-secondary" type="button" id="generateAnswerButton" onclick="generateAnswer()" hidden>Generate answer</button></div>
+<div class="mt-4 text-center"><button class="btn btn-secondary" type="button" id="flipButton" onclick="flip()" hidden>Flip</button></div>
+<table class="mt-4 status-table">
+  <tr>
+    <td style="white-space: nowrap">WebSocket Status</td>
+    <td>:</td>
+    <td id="websocketStatus">Disconnected</td>
+  </tr>
+  <tr>
+    <td style="white-space: nowrap">Session ID</td>
+    <td>:</td>
+    <td id="sessionId">-</td>
+  </tr>
+</table>
+<div class="mt-4 text-center"><a href="stats" class="btn btn-secondary" type="button">View statistics</a></div>
+<script>
+    var sessionId = localStorage.getItem('session_id');
+
+    var websocket = new WebSocket(document.location.href.replace('http://', 'ws://').replace(/\/$/, '') + '/ws');
+
+    websocket.onopen = function () {
+        $('#websocketStatus').html('Connected');
+
+        if (sessionId != null) {
+            websocket.send(JSON.stringify({'action': 'set_session_id', 'session_id': sessionId}));
+        } else {
+            websocket.send(JSON.stringify({'action': 'new_session'}));
+        }
+    };
+
+    websocket.onclose = function () {
+        $('#websocketStatus').html('Disconnected')
+    };
+
+    var trialId = null;
+
+    var requestSentTime;
+
+    var target = null;
+
+    websocket.onmessage = function(event) {
+        var message = JSON.parse(event.data);
+        if (message['type'] === 'set_session_id_result') {
+            if (message['status'] === 1) {
+                $('#sessionId').html(sessionId);
+            } else if (message['status'] === 0) {
+                websocket.send(JSON.stringify({'action': 'new_session'}));
+            }
+        } else if (message['type'] === 'new_session_result') {
+            sessionId = message['session_id'];
+            localStorage.setItem('session_id', sessionId);
+            $('#sessionId').html(sessionId);
+        } else if (message['type'] === 'prepare_trial_result') {
+            trialId = message['trial_id'];
+            $('#cardContainer').html('<img class="zener-card" src="{{ card_back }}"/>');
+            $('#prepareButton').prop('hidden', true);
+            $('#generateAnswerButton').prop('disabled', false);
+            $('#generateAnswerButton').prop('hidden', false);
+        } else if (message['type'] === 'target_and_answer') {
+            target = message['target'];
+
+            websocket.send(JSON.stringify({
+                'action': 'report_rtd',
+                'trial_id': trialId,
+                'rtd_ms': Math.round(performance.now() - requestSentTime)
+            }));
+
+            if (message['answer'] === 0) {
+                $('#answerContainer').html('Circle');
+            } else if (message['answer'] === 1) {
+                $('#answerContainer').html('Cross');
+            } else if (message['answer'] === 2) {
+                $('#answerContainer').html('Waves');
+            } else if (message['answer'] === 3) {
+                $('#answerContainer').html('Square');
+            } else if (message['answer'] === 4) {
+                $('#answerContainer').html('Star');
+            }
+
+            $('#generateAnswerButton').prop('hidden', true);
+            $('#flipButton').prop('hidden', false);
+        }
+    };
+
+    function prepare() {
+        $('#answerContainer').html('&nbsp;');
+        $('#prepareButton').prop('hidden', true);
+        websocket.send(JSON.stringify({'action': 'prepare_trial'}));
+    }
+
+    function generateAnswer() {
+        $('#generateAnswerButton').prop('disabled', true);
+        websocket.send(JSON.stringify({'action': 'generate_trial_answer', 'trial_id': trialId}));
+        requestSentTime = performance.now();
+    }
+
+    function flip() {
+        if (target === 0) {
+            $('#cardContainer').html('<img class="zener-card" src="{{ circle_card }}"/>');
+        } else if (target === 1) {
+            $('#cardContainer').html('<img class="zener-card" src="{{ cross_card }}"/>');
+        } else if (target === 2) {
+            $('#cardContainer').html('<img class="zener-card" src="{{ waves_card }}"/>');
+        } else if (target === 3) {
+            $('#cardContainer').html('<img class="zener-card" src="{{ square_card }}"/>');
+        } else if (target === 4) {
+            $('#cardContainer').html('<img class="zener-card" src="{{ star_card }}"/>');
+        }
+        $('#flipButton').prop('hidden', true);
+        $('#prepareButton').prop('hidden', false);
+    }
+</script>
+{% endblock %}

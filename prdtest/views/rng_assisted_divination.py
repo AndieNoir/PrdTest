@@ -30,8 +30,8 @@ from prdtest.data.generators.pseudorandom_2797e9c1 import Pseudorandom2797E9C1
 from prdtest.utils import create_logs_dir_if_not_exist
 
 
-blueprint = Blueprint('binary_pk', __name__)
-ws_blueprint = Blueprint('binary_pk_ws', __name__)
+blueprint = Blueprint('rng_assisted_divination', __name__)
+ws_blueprint = Blueprint('rng_assisted_divination_ws', __name__)
 
 _GENERATOR_CLASSES = [
     ComscireF33E62D4,
@@ -40,36 +40,38 @@ _GENERATOR_CLASSES = [
 
 _generators = [*map(lambda cls: cls(), _GENERATOR_CLASSES)]
 
+_pseudorandom = random.Random()
+
 _session_ids = set()
 _unrecorded_trials = {}
 
 create_logs_dir_if_not_exist()
-_log_file = open('logs/binary_pk.csv', 'a')
-if os.stat('logs/binary_pk.csv').st_size == 0:
-    _log_file.write('timestamp,ip_address,ip_address_country_alpha2,user_agent,session_id,hit,raw_bits,rtd_ms,generator_id\n')
+_log_file = open('logs/rng_assisted_divination.csv', 'a')
+if os.stat('logs/rng_assisted_divination.csv').st_size == 0:
+    _log_file.write('timestamp,ip_address,ip_address_country_alpha2,user_agent,session_id,target,answer,rtd_ms,generator_id\n')
     _log_file.flush()
 
 
 @blueprint.route('/')
-@register_breadcrumb(blueprint, '.', 'Binary PK')
-def binary_pk():
-    return render_template('binary_pk.html')
+@register_breadcrumb(blueprint, '.', 'RNG-Assisted Divination')
+def rng_assisted_divination():
+    return render_template('rng_assisted_divination.html')
 
 
 @blueprint.route('/stats')
 @register_breadcrumb(blueprint, '.stats', 'Statistics')
-def binary_pk_stats():
-    return render_template('binary_pk_stats.html')
+def rng_assisted_divination_stats():
+    return render_template('rng_assisted_divination_stats.html')
 
 
-@blueprint.route('/binary_pk.csv')
+@blueprint.route('/rng_assisted_divination.csv')
 def download_generated_dataset():
-    return send_file(f'{os.getcwd()}/logs/binary_pk.csv')
+    return send_file(f'{os.getcwd()}/logs/rng_assisted_divination.csv')
 
 
 @blueprint.route('/api/get_session_trial_counts_and_hit_counts')
 def api_get_session_trial_counts_and_hit_counts():
-    df = pd.read_csv('logs/binary_pk.csv')
+    df = pd.read_csv('logs/rng_assisted_divination.csv')
     df = df[(df['session_id'] == request.args.get('session_id'))]
     generator_ids = df['generator_id'].unique()
     hit_rates_and_trial_counts = []
@@ -78,7 +80,7 @@ def api_get_session_trial_counts_and_hit_counts():
         hit_rates_and_trial_counts.append({
             'generator_id': generator_id,
             'trial_count': len(generator_df),
-            'hit_count': len(generator_df[generator_df['hit'] == 1])
+            'hit_count': len(generator_df[generator_df['target'] == generator_df['answer']])
         })
     hit_rates_and_trial_counts.sort(key=lambda item: item['generator_id'])
     return Response(json.dumps(hit_rates_and_trial_counts),  mimetype='application/json')
@@ -86,7 +88,7 @@ def api_get_session_trial_counts_and_hit_counts():
 
 @blueprint.route('/api/get_overall_trial_counts_and_hit_counts')
 def api_get_overall_trial_counts_and_hit_counts():
-    df = pd.read_csv('logs/binary_pk.csv')
+    df = pd.read_csv('logs/rng_assisted_divination.csv')
     generator_ids = df['generator_id'].unique()
     hit_rates_and_trial_counts = []
     for generator_id in generator_ids:
@@ -94,7 +96,7 @@ def api_get_overall_trial_counts_and_hit_counts():
         hit_rates_and_trial_counts.append({
             'generator_id': generator_id,
             'trial_count': len(generator_df),
-            'hit_count': len(generator_df[generator_df['hit'] == 1])
+            'hit_count': len(generator_df[generator_df['target'] == generator_df['answer']])
         })
     hit_rates_and_trial_counts.sort(key=lambda item: item['generator_id'])
     return Response(json.dumps(hit_rates_and_trial_counts),  mimetype='application/json')
@@ -113,34 +115,42 @@ def ws(websocket):
                     session_id = str(uuid.uuid4())
                     _session_ids.add(session_id)
                     websocket.send(json.dumps({'type': 'new_session_result', 'session_id': session_id}))
-                if action == 'set_session_id':
+                elif action == 'set_session_id':
                     if message['session_id'] in _session_ids:
                         session_id = message['session_id']
                         websocket.send(json.dumps({'type': 'set_session_id_result', 'status': 1}))
                     else:
                         websocket.send(json.dumps({'type': 'set_session_id_result', 'status': 0}))
-                if action == 'trial':
+                elif action == 'prepare_trial':
                     if session_id is not None:
-                        timestamp = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%fZ')
                         trial_id = str(uuid.uuid4())
-                        generator = random.choice(_generators)
-                        b, raw_bits = generator.get_bool()
-                        hit = 1 if b else 0
-                        websocket.send(json.dumps({'type': 'trial_result', 'trial_id': trial_id, 'hit': hit}))
                         _unrecorded_trials[trial_id] = {
-                            'timestamp': timestamp,
                             'ip_address': request.remote_addr,
                             'ip_address_country_alpha2': ip_geolocation.get_country_alpha2(request.remote_addr),
                             'user_agent': request.user_agent.string,
                             'session_id': session_id,
-                            'hit': hit,
-                            'raw_bits': ''.join([str(bit) for bit in raw_bits]),
-                            'generator_id': generator.id
+                            'target': _pseudorandom.randint(0, 4)
                         }
+                        websocket.send(json.dumps({'type': 'prepare_trial_result', 'trial_id': trial_id}))
+                elif action == 'generate_trial_answer':
+                    timestamp = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+                    trial = _unrecorded_trials[message['trial_id']]
+                    if trial['session_id'] == session_id:
+                        generator = _pseudorandom.choice(_generators)
+                        trial['answer'] = generator.get_int_between_0_and_4()
+                        trial['generator_id'] = generator.id
+                        trial['timestamp'] = timestamp
+                        websocket.send(json.dumps({'type': 'target_and_answer', 'target': trial['target'], 'answer': trial['answer']}))
+                elif action == 'set_session_id':
+                    if message['session_id'] in _session_ids:
+                        session_id = message['session_id']
+                        websocket.send(json.dumps({'type': 'set_session_id_result', 'status': 1}))
+                    else:
+                        websocket.send(json.dumps({'type': 'set_session_id_result', 'status': 0}))
                 elif action == 'report_rtd':
                     trial = _unrecorded_trials[message['trial_id']]
                     if trial['session_id'] == session_id:
-                        _log_file.write(f'{trial["timestamp"]},{trial["ip_address"]},{trial["ip_address_country_alpha2"] if trial["ip_address_country_alpha2"] is not None else ""},"{trial["user_agent"]}",{trial["session_id"]},{trial["hit"]},{trial["raw_bits"]},{int(message["rtd_ms"])},{trial["generator_id"]}\n')
+                        _log_file.write(f'{trial["timestamp"]},{trial["ip_address"]},{trial["ip_address_country_alpha2"] if trial["ip_address_country_alpha2"] is not None else ""},"{trial["user_agent"]}",{trial["session_id"]},{trial["target"]},{trial["answer"]},{int(message["rtd_ms"])},{trial["generator_id"]}\n')
                         _log_file.flush()
                         del _unrecorded_trials[message['trial_id']]
         except Exception as e:

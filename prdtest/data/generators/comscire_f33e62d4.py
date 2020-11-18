@@ -22,7 +22,7 @@ from prdtest.data.generators.base import Generator
 
 class ComscireF33E62D4(Generator, id='comscire_f33e62d4'):
 
-    _GET_BOOL_BITS_PER_TRIAL = 199
+    _GET_BOOL_BITS_PER_TRIAL = 5
 
     def __init__(self):
         self._qwqng_wrapper = ctypes.cdll.LoadLibrary('./libqwqng-wrapper-x86-64.so' if platform.machine().endswith('64') else './libqwqng-wrapper.so')
@@ -34,14 +34,16 @@ class ComscireF33E62D4(Generator, id='comscire_f33e62d4'):
         self._qwqng_wrapper.Clear.argtypes = [ctypes.c_void_p]
         self._qng_pointer = self._qwqng_wrapper.GetQwqngInstance()
 
-    def get_bool(self) -> tuple:
-        raw_bits = []
+    def get_bool(self) -> bool:
+        # R.M. Brier et al., "Psi Application: Part II. The Majority Vote Technique—Analysis and Observations", Journal
+        # of Parapsychology, vol. 34, pp. 26-36, 1970.
+        bits = []
         data = self._get_bytes(math.ceil(ComscireF33E62D4._GET_BOOL_BITS_PER_TRIAL / 8))
         for i in range(len(data)):
             for j in range(8):
-                raw_bits.append(1 if data[i] >> j & 1 == 1 else 0)
-        raw_bits = raw_bits[:ComscireF33E62D4._GET_BOOL_BITS_PER_TRIAL]
-        return raw_bits.count(1) > ComscireF33E62D4._GET_BOOL_BITS_PER_TRIAL / 2, raw_bits
+                bits.append(1 if data[i] >> j & 1 == 1 else 0)
+        bits = bits[:ComscireF33E62D4._GET_BOOL_BITS_PER_TRIAL]
+        return bits.count(1) > ComscireF33E62D4._GET_BOOL_BITS_PER_TRIAL / 2
 
     def get_int_between_0_and_4(self) -> int:
         self._qwqng_wrapper.Clear(self._qng_pointer)

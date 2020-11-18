@@ -19,7 +19,7 @@ class Generator:
         super().__init_subclass__(**kwargs)
         cls.id = id
 
-    def get_bool(self) -> tuple:
+    def get_bool(self) -> bool:
         pass
 
     def get_int_between_0_and_4(self) -> int:

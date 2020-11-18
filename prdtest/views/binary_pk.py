@@ -46,7 +46,7 @@ _unrecorded_trials = {}
 create_logs_dir_if_not_exist()
 _log_file = open('logs/binary_pk.csv', 'a')
 if os.stat('logs/binary_pk.csv').st_size == 0:
-    _log_file.write('timestamp,ip_address,ip_address_country_alpha2,user_agent,session_id,hit,raw_bits,rtd_ms,generator_id\n')
+    _log_file.write('timestamp,ip_address,ip_address_country_alpha2,user_agent,session_id,hit,rtd_ms,generator_id\n')
     _log_file.flush()
 
 
@@ -124,7 +124,7 @@ def ws(websocket):
                         timestamp = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%fZ')
                         trial_id = str(uuid.uuid4())
                         generator = random.choice(_generators)
-                        b, raw_bits = generator.get_bool()
+                        b = generator.get_bool()
                         hit = 1 if b else 0
                         websocket.send(json.dumps({'type': 'trial_result', 'trial_id': trial_id, 'hit': hit}))
                         _unrecorded_trials[trial_id] = {
@@ -134,13 +134,12 @@ def ws(websocket):
                             'user_agent': request.user_agent.string,
                             'session_id': session_id,
                             'hit': hit,
-                            'raw_bits': ''.join([str(bit) for bit in raw_bits]),
                             'generator_id': generator.id
                         }
                 elif action == 'report_rtd':
                     trial = _unrecorded_trials[message['trial_id']]
                     if trial['session_id'] == session_id:
-                        _log_file.write(f'{trial["timestamp"]},{trial["ip_address"]},{trial["ip_address_country_alpha2"] if trial["ip_address_country_alpha2"] is not None else ""},"{trial["user_agent"]}",{trial["session_id"]},{trial["hit"]},{trial["raw_bits"]},{int(message["rtd_ms"])},{trial["generator_id"]}\n')
+                        _log_file.write(f'{trial["timestamp"]},{trial["ip_address"]},{trial["ip_address_country_alpha2"] if trial["ip_address_country_alpha2"] is not None else ""},"{trial["user_agent"]}",{trial["session_id"]},{trial["hit"]},{int(message["rtd_ms"])},{trial["generator_id"]}\n')
                         _log_file.flush()
                         del _unrecorded_trials[message['trial_id']]
         except Exception as e:

@@ -20,9 +20,9 @@ from prdtest.data.generators.base import Generator
 
 class Pseudorandom2797E9C1(Generator, id='pseudorandom_2797e9c1'):
 
-    def get_bool(self) -> tuple:
+    def get_bool(self) -> bool:
         random_bit = random.getrandbits(1)
-        return random_bit == 1, [random_bit]
+        return random_bit == 1
 
     def get_int_between_0_and_4(self) -> int:
         return random.randint(0, 4)

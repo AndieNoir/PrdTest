@@ -18,7 +18,8 @@ Running
 Adding a new random number generator
 ------------------------------------
 
-1.  Create a class that extends `Generator` and override the `get_bool` method
+1.  Create a class that extends `Generator` and override `get_bool` and
+    `get_int_between_0_and_4`
 
     Example:
 
@@ -26,8 +27,7 @@ Adding a new random number generator
     # prdtest/generator/dev_hwrng.py
     
     from prdtest.generator.base import Generator
-    
-    
+
     class DevHwrng(Generator, id='my_rng'):
 
         def __init__(self):
@@ -46,8 +46,7 @@ Adding a new random number generator
     # prdtest/config.py
     
     from prdtest.generator.dev_hwrng import DevHwrng
-    
-    
+
     GENERATOR_CLASSES = [
         # ...,
         DevHwrng,

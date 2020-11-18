@@ -40,14 +40,17 @@ _GENERATOR_CLASSES = [
 
 _generators = [*map(lambda cls: cls(), _GENERATOR_CLASSES)]
 
-_session_ids = set()
-_unrecorded_trials = {}
-
+# TODO use sqlite
 create_logs_dir_if_not_exist()
 _log_file = open('logs/binary_pk.csv', 'a')
 if os.stat('logs/binary_pk.csv').st_size == 0:
     _log_file.write('timestamp,ip_address,ip_address_country_alpha2,user_agent,session_id,hit,rtd_ms,generator_id\n')
     _log_file.flush()
+
+_session_ids = set()
+_session_ids.update(pd.read_csv('logs/binary_pk.csv')['session_id'].unique())
+
+_unrecorded_trials = {}
 
 
 @blueprint.route('/')

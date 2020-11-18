@@ -42,14 +42,17 @@ _generators = [*map(lambda cls: cls(), _GENERATOR_CLASSES)]
 
 _pseudorandom = random.Random()
 
-_session_ids = set()
-_unrecorded_trials = {}
-
+# TODO use sqlite
 create_logs_dir_if_not_exist()
 _log_file = open('logs/rng_assisted_divination.csv', 'a')
 if os.stat('logs/rng_assisted_divination.csv').st_size == 0:
     _log_file.write('timestamp,ip_address,ip_address_country_alpha2,user_agent,session_id,target,answer,rtd_ms,generator_id\n')
     _log_file.flush()
+
+_session_ids = set()
+_session_ids.update(pd.read_csv('logs/rng_assisted_divination.csv')['session_id'].unique())
+
+_unrecorded_trials = {}
 
 
 @blueprint.route('/')
